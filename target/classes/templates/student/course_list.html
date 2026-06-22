@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>选课中心</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 25px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #f5f5f5; }
+        button { cursor: pointer; padding: 6px 12px; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 15px; color: #007bff; text-decoration: none; }
+        .full-tip { color: #999; }
+    </style>
+</head>
+<body>
+<div class="nav">
+    <a href="/student/grades">成绩查询</a>
+    <a href="/login.html" onclick="localStorage.clear()" style="float:right;">退出登录</a>
+</div>
+
+<h1>选课中心</h1>
+<div id="loading">加载中...</div>
+<table id="courseTable" style="display:none;">
+    <thead>
+    <tr>
+        <th>课程名称</th><th>授课教师</th><th>学分</th><th>上课时间</th><th>上课地点</th><th>容量</th><th>已选</th><th>操作</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script src="/js/common.js"></script>
+<script>
+    const studentId = localStorage.getItem("studentId");
+    const semester = "2025-2026-2";
+
+    if (!studentId) {
+        alert("请先登录");
+        location.href = "/login.html";
+    }
+
+    // 加载可选课程
+    authFetch(`/api/student/courses?semester=${semester}`)
+        .then(res => {
+            document.getElementById("loading").style.display = "none";
+            if (res.code === 200) {
+                const list = res.data;
+                const tbody = document.querySelector("#courseTable tbody");
+                tbody.innerHTML = "";
+
+                list.forEach(course => {
+                    const row = tbody.insertRow();
+                    row.insertCell().textContent = course.courseName || "";
+                    row.insertCell().textContent = course.teacherName || "";
+                    row.insertCell().textContent = course.credit || 0;
+                    row.insertCell().textContent = course.schedule || "";
+                    row.insertCell().textContent = course.location || "";
+                    row.insertCell().textContent = course.capacity || 0;
+                    row.insertCell().textContent = course.enrolledCount || 0;
+
+                    const cell = row.insertCell();
+                    const isFull = (course.enrolledCount || 0) >= (course.capacity || 0);
+                    if (isFull) {
+                        cell.innerHTML = '<span class="full-tip">已满</span>';
+                    } else {
+                        const btn = document.createElement("button");
+                        btn.textContent = "选课";
+                        btn.onclick = () => selectCourse(course.offerId, btn);
+                        cell.appendChild(btn);
+                    }
+                });
+
+                document.getElementById("courseTable").style.display = "table";
+            } else {
+                alert("加载失败：" + res.msg);
+            }
+        });
+
+    function selectCourse(offerId, btn) {
+        authFetch(`/api/student/select?studentId=${studentId}&offerId=${offerId}`, {
+            method: "POST"
+        }).then(res => {
+            alert(res.msg);
+            if (res.code === 200) {
+                btn.disabled = true;
+                btn.textContent = "已选";
+            }
+        });
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>学生首页</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .menu { margin: 20px 0; }
+        .menu a { margin-right: 15px; }
+    </style>
+</head>
+<body>
+<h1>学生首页</h1>
+<div class="menu">
+    <a href="/student/profile">个人信息</a>
+    <a href="/student/course_list">选课中心</a>
+    <a href="/student/my_courses">我的课程</a>
+    <a href="/student/grades">成绩查询</a>
+</div>
+<div th:if="${session.user != null}">
+    <p>欢迎，[[${session.user.name}]]</p>
+</div>
+<a href="/login.html">退出</a>
+</body>
+</html>

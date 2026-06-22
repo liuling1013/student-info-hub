@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.grade.mapper.EnrollmentMapper">
+
+    <select id="selectStudentGradeList" resultType="java.util.HashMap">
+        SELECT
+            c.course_name,
+            c.credit,
+            co.semester,
+            e.regular_score,
+            e.exam_score,
+            e.total_score,
+            e.grade_point
+        FROM enrollment e
+                 JOIN course_offer co ON e.offer_id = co.offer_id
+                 JOIN course c ON co.course_id = c.course_id
+        WHERE e.student_id = #{studentId} AND e.status = 1
+    </select>
+
+    <select id="selectClassGradeList" resultType="java.util.HashMap">
+        SELECT
+            e.enroll_id,
+            s.student_no,
+            s.name,
+            s.class_name,
+            e.regular_score,
+            e.exam_score,
+            e.total_score,
+            e.grade_point
+        FROM enrollment e
+                 JOIN student s ON e.student_id = s.student_id
+        WHERE e.offer_id = #{offerId} AND e.status = 1
+        ORDER BY e.total_score DESC
+    </select>
+
+</mapper>

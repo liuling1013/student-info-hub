@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>全校成绩统计</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        select, button { padding: 8px; margin: 10px 0; }
+        #chart { width: 800px; height: 500px; margin: 20px auto; }
+    </style>
+</head>
+<body>
+<h1>全校成绩统计</h1>
+<div>
+    <label>选择课程：</label>
+    <select id="courseSelect">
+        <option value="">-- 请选择课程 --</option>
+    </select>
+    <button onclick="loadStatistics()">查看统计</button>
+</div>
+<div id="chart"></div>
+<script src="/js/common.js"></script>
+<script>
+    // 加载所有开课列表
+    authFetch("/api/admin/offers").then(data => {
+        if (data.code === 200) {
+            const select = document.getElementById("courseSelect");
+            data.data.forEach(offer => {
+                const option = document.createElement("option");
+                option.value = offer.offerId;
+                option.text = `${offer.courseName} (${offer.semester})`;
+                select.appendChild(option);
+            });
+        } else {
+            alert("加载课程列表失败");
+        }
+    });
+
+    function loadStatistics() {
+        const offerId = document.getElementById("courseSelect").value;
+        if (!offerId) {
+            alert("请选择课程");
+            return;
+        }
+        authFetch(`/api/teacher/statistics?offerId=${offerId}`).then(data => {
+            if (data.code === 200) {
+                const stats = data.data;
+                const distribution = stats.distribution;
+                const chart = echarts.init(document.getElementById("chart"));
+                chart.setOption({
+                    title: { text: "成绩分布" },
+                    xAxis: { type: "category", data: ["0-59", "60-69", "70-79", "80-89", "90-100"] },
+                    yAxis: { type: "value", name: "人数" },
+                    series: [{ type: "bar", data: distribution }]
+                });
+            } else {
+                alert("加载统计失败：" + data.msg);
+            }
+        });
+    }
+</script>
+</body>
+</html>

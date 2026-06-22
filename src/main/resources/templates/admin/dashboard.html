@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>管理员控制台</title>
+    <style>
+        body { font-family: "Microsoft YaHei", Arial, sans-serif; margin: 20px; }
+        h1 { font-size: 48px; margin: 0 0 30px 0; font-weight: bold; }
+
+        .tab-btn {
+            margin-right: 25px;
+            padding: 18px 40px;
+            cursor: pointer;
+            background: #f0f0f0;
+            border: none;
+            font-size: 26px;
+            border-radius: 4px;
+        }
+        .tab-btn.active { background: #007bff; color: white; }
+
+        .tab-content { display: none; margin-top: 40px; }
+        .tab-content.active { display: block; }
+
+        .btn-group { margin-bottom: 15px; }
+        .add-btn, .import-btn {
+            padding: 12px 25px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 22px;
+            background: #f5f5f5;
+            border: 2px solid #999;
+            border-radius: 4px;
+        }
+        .import-btn { background: #e8f5e9; border-color: #4caf50; color: #2e7d32; }
+
+        table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 18px 15px;
+            text-align: left;
+            font-size: 24px;
+            font-weight: normal;
+        }
+        th { background: #f5f5f5; font-weight: bold; }
+
+        .action-btn { padding: 6px 14px; margin-right: 8px; cursor: pointer; font-size: 16px; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+        }
+        .modal-content {
+            background: white;
+            width: 500px;
+            margin: 120px auto;
+            padding: 25px;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .modal h3 { margin-top: 0; font-size: 20px; }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 6px 0 15px 0;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .modal-footer { text-align: right; margin-top: 15px; }
+        .modal-footer button { padding: 8px 20px; margin-left: 10px; cursor: pointer; font-size: 16px; }
+
+        .tip-bar {
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin: 15px 0;
+            display: none;
+            font-size: 16px;
+        }
+        .tip-error { color: #d93025; background: #ffebe9; }
+        .tip-success { color: #155724; background: #d4edda; }
+
+        #importFile { display: none; }
+    </style>
+</head>
+<body>
+<h1>管理员控制台</h1>
+
+<div class="tab-bar">
+    <button class="tab-btn active" data-tab="students">学生管理</button>
+    <button class="tab-btn" data-tab="teachers">教师管理</button>
+    <button class="tab-btn" data-tab="courses">课程管理</button>
+    <button class="tab-btn" data-tab="offers">开课管理</button>
+</div>
+
+<div id="tipBar" class="tip-bar"></div>
+
+<!-- 学生管理 -->
+<div id="students" class="tab-content active">
+    <div class="btn-group">
+        <button class="add-btn" id="addStudentBtn">新增学生</button>
+        <button class="import-btn" id="importStudentBtn">批量导入学生</button>
+        <input type="file" id="importFile" accept=".xlsx,.xls">
+    </div>
+    <table id="studentTable">
+        <thead>
+        <tr>
+            <th>学号</th><th>姓名</th><th>班级</th><th>电话</th><th>邮箱</th><th>操作</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<!-- 教师管理 -->
+<div id="teachers" class="tab-content">
+    <div class="btn-group">
+        <button class="add-btn" id="addTeacherBtn">新增教师</button>
+    </div>
+    <table id="teacherTable">
+        <thead>
+        <tr>
+            <th>工号</th><th>姓名</th><th>职称</th><th>电话</th><th>邮箱</th><th>操作</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<!-- 课程管理 -->
+<div id="courses" class="tab-content">
+    <div class="btn-group">
+        <button class="add-btn" id="addCourseBtn">新增课程</button>
+    </div>
+    <table id="courseTable">
+        <thead>
+        <tr>
+            <th>课程编号</th><th>课程名称</th><th>学分</th><th>学时</th><th>类型</th><th>操作</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<!-- 开课管理 -->
+<div id="offers" class="tab-content">
+    <div class="btn-group">
+        <button class="add-btn" id="addOfferBtn">新增开课</button>
+    </div>
+    <table id="offerTable">
+        <thead>
+        <tr>
+            <th>课程名称</th><th>授课教师</th><th>学期</th><th>时间地点</th><th>容量</th><th>已选</th><th>操作</th>
+        </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<!-- 通用弹窗 -->
+<div id="formModal" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTitle">新增</h3>
+        <div id="formBody"></div>
+        <div class="modal-footer">
+            <button id="cancelBtn">取消</button>
+            <button id="saveBtn" style="background:#007bff;color:white;border:none;">保存</button>
+        </div>
+    </div>
+</div>
+
+<script src="/js/common.js"></script>
+<script>
+    // 全局变量
+    let currentTab = "students";
+    let editId = null;
+    let currentType = null;
+
+    // tab与表格ID映射
+    const tableIdMap = {
+        students: "studentTable",
+        teachers: "teacherTable",
+        courses: "courseTable",
+        offers: "offerTable"
+    };
+
+    // 兼容字段取值：优先驼峰，其次下划线
+    function getVal(item, camel, underscore) {
+        if (item == null) return "";
+        if (item[camel] !== undefined && item[camel] !== null) return item[camel];
+        if (item[underscore] !== undefined && item[underscore] !== null) return item[underscore];
+        return "";
+    }
+
+    // 显示提示信息
+    function showTip(msg, isError = false) {
+        const tip = document.getElementById("tipBar");
+        tip.className = "tip-bar " + (isError ? "tip-error" : "tip-success");
+        tip.textContent = msg;
+        tip.style.display = "block";
+        setTimeout(() => tip.style.display = "none", 3000);
+    }
+
+    // 页面DOM加载完成后执行所有初始化
+    window.onload = function() {
+        // 1. 标签切换事件
+        document.querySelectorAll(".tab-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+                currentTab = btn.dataset.tab;
+                document.getElementById(currentTab).classList.add("active");
+                loadTableData(currentTab);
+            });
+        });
+
+        // 2. 新增按钮事件绑定（彻底解决点击无响应）
+        document.getElementById("addStudentBtn").addEventListener("click", () => {
+            console.log("点击新增学生");
+            openModal("student");
+        });
+        document.getElementById("addTeacherBtn").addEventListener("click", () => openModal("teacher"));
+        document.getElementById("addCourseBtn").addEventListener("click", () => openModal("course"));
+        document.getElementById("addOfferBtn").addEventListener("click", () => openModal("offer"));
+
+        // 3. 弹窗按钮事件
+        document.getElementById("cancelBtn").addEventListener("click", closeModal);
+        document.getElementById("saveBtn").addEventListener("click", saveData);
+
+        // 4. 批量导入按钮事件
+        document.getElementById("importStudentBtn").addEventListener("click", () => {
+            document.getElementById("importFile").click();
+        });
+
+        document.getElementById("importFile").addEventListener("change", function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append("file", file);
+
+            authFetch("/api/admin/student/batchImport", {
+                method: "POST",
+                body: formData
+            }).then(res => {
+                if (res.code === 200) {
+                    showTip(res.msg);
+                    loadTableData("students");
+                } else {
+                    showTip(res.msg, true);
+                }
+                e.target.value = "";
+            }).catch(err => {
+                showTip("导入失败：" + err.message, true);
+                e.target.value = "";
+            });
+        });
+
+        // 初始化加载学生数据
+        loadTableData("students");
+    };
+
+    // 加载列表数据
+    function loadTableData(tab) {
+        let url = "";
+        if (tab === "students") url = "/api/admin/students";
+        else if (tab === "teachers") url = "/api/admin/teachers";
+        else if (tab === "courses") url = "/api/admin/courses";
+        else if (tab === "offers") url = "/api/admin/offers";
+
+        authFetch(url).then(res => {
+            if (res.code === 200) {
+                renderTable(tab, res.data);
+            } else {
+                showTip("加载失败：" + res.msg, true);
+            }
+        }).catch(err => {
+            console.error("请求异常：", err);
+            showTip("请求失败：" + err.message, true);
+        });
+    }
+
+    // 渲染表格
+    function renderTable(tab, list) {
+        const tableId = tableIdMap[tab];
+        const tbody = document.querySelector(`#${tableId} tbody`);
+
+        if (!tbody) {
+            console.error("未找到表格：", tableId);
+            return;
+        }
+
+        tbody.innerHTML = "";
+        if (!list || list.length === 0) return;
+
+        list.forEach(item => {
+            const row = tbody.insertRow();
+            if (tab === "students") {
+                row.insertCell().textContent = getVal(item, "studentNo", "student_no");
+                row.insertCell().textContent = getVal(item, "name", "name");
+                row.insertCell().textContent = getVal(item, "className", "class_name");
+                row.insertCell().textContent = getVal(item, "phone", "phone");
+                row.insertCell().textContent = getVal(item, "email", "email");
+                addActionBtns(row.insertCell(), tab, item);
+            } else if (tab === "teachers") {
+                row.insertCell().textContent = getVal(item, "teacherNo", "teacher_no");
+                row.insertCell().textContent = getVal(item, "name", "name");
+                row.insertCell().textContent = getVal(item, "title", "title");
+                row.insertCell().textContent = getVal(item, "phone", "phone");
+                row.insertCell().textContent = getVal(item, "email", "email");
+                addActionBtns(row.insertCell(), tab, item);
+            } else if (tab === "courses") {
+                row.insertCell().textContent = getVal(item, "courseCode", "course_code");
+                row.insertCell().textContent = getVal(item, "courseName", "course_name");
+                row.insertCell().textContent = getVal(item, "credit", "credit");
+                row.insertCell().textContent = getVal(item, "hours", "hours");
+                row.insertCell().textContent = getVal(item, "type", "type");
+                addActionBtns(row.insertCell(), tab, item);
+            } else if (tab === "offers") {
+                row.insertCell().textContent = getVal(item, "courseName", "course_name") || getVal(item, "courseId", "course_id");
+                row.insertCell().textContent = getVal(item, "teacherName", "teacher_name") || getVal(item, "teacherId", "teacher_id");
+                row.insertCell().textContent = getVal(item, "semester", "semester");
+                row.insertCell().textContent = `${getVal(item, "schedule", "schedule") || ""} ${getVal(item, "location", "location") || ""}`;
+                row.insertCell().textContent = getVal(item, "capacity", "capacity") || 0;
+                row.insertCell().textContent = getVal(item, "enrolledCount", "enrolled_count") || 0;
+                addActionBtns(row.insertCell(), tab, item);
+            }
+        });
+    }
+
+    // 操作按钮
+    function addActionBtns(cell, tab, item) {
+        const editBtn = document.createElement("button");
+        editBtn.className = "action-btn";
+        editBtn.textContent = "编辑";
+        editBtn.addEventListener("click", () => openModal(tab.replace(/s$/, ""), item));
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "action-btn";
+        delBtn.textContent = "删除";
+        delBtn.addEventListener("click", () => {
+            if (!confirm("确认删除该条数据？")) return;
+            const idKey = tab === "students" ? "studentId" :
+                tab === "teachers" ? "teacherId" :
+                    tab === "courses" ? "courseId" : "offerId";
+            const idVal = getVal(item, idKey, idKey.replace(/([A-Z])/g,"_$1").toLowerCase());
+            const delUrl = `/api/admin/${tab.replace(/s$/, "")}/delete?${idKey}=${idVal}`;
+
+            authFetch(delUrl, { method: "DELETE" }).then(res => {
+                if (res.code === 200) {
+                    showTip("删除成功");
+                    loadTableData(tab);
+                } else {
+                    showTip("删除失败：" + res.msg, true);
+                }
+            });
+        });
+        cell.append(editBtn, delBtn);
+    }
+
+    // 打开弹窗
+    function openModal(type, item = null) {
+        currentType = type;
+        editId = item ? (
+            getVal(item, "studentId", "student_id") ||
+            getVal(item, "teacherId", "teacher_id") ||
+            getVal(item, "courseId", "course_id") ||
+            getVal(item, "offerId", "offer_id")
+        ) : null;
+        document.getElementById("modalTitle").textContent = editId ? "编辑" : "新增" + type;
+
+        let formHtml = "";
+        if (type === "student") {
+            formHtml = `
+                <label>学号</label>
+                <input id="f_studentNo" value="${getVal(item, 'studentNo', 'student_no')}" ${editId ? "disabled" : ""}>
+                <label>姓名</label>
+                <input id="f_name" value="${getVal(item, 'name', 'name')}">
+                <label>班级</label>
+                <input id="f_className" value="${getVal(item, 'className', 'class_name')}">
+                <label>电话</label>
+                <input id="f_phone" value="${getVal(item, 'phone', 'phone')}">
+                <label>邮箱</label>
+                <input id="f_email" value="${getVal(item, 'email', 'email')}">
+            `;
+        } else if (type === "teacher") {
+            formHtml = `
+                <label>工号</label>
+                <input id="f_teacherNo" value="${getVal(item, 'teacherNo', 'teacher_no')}" ${editId ? "disabled" : ""}>
+                <label>姓名</label>
+                <input id="f_name" value="${getVal(item, 'name', 'name')}">
+                <label>职称</label>
+                <input id="f_title" value="${getVal(item, 'title', 'title')}">
+                <label>电话</label>
+                <input id="f_phone" value="${getVal(item, 'phone', 'phone')}">
+                <label>邮箱</label>
+                <input id="f_email" value="${getVal(item, 'email', 'email')}">
+            `;
+        } else if (type === "course") {
+            formHtml = `
+                <label>课程编号</label>
+                <input id="f_courseCode" value="${getVal(item, 'courseCode', 'course_code')}" ${editId ? "disabled" : ""}>
+                <label>课程名称</label>
+                <input id="f_courseName" value="${getVal(item, 'courseName', 'course_name')}">
+                <label>学分</label>
+                <input id="f_credit" type="number" step="0.5" value="${getVal(item, 'credit', 'credit') || 0}">
+                <label>学时</label>
+                <input id="f_hours" type="number" value="${getVal(item, 'hours', 'hours') || 0}">
+                <label>课程类型</label>
+                <input id="f_type" value="${getVal(item, 'type', 'type')}">
+            `;
+        } else if (type === "offer") {
+            formHtml = `
+                <label>课程ID</label>
+                <input id="f_courseId" type="number" value="${getVal(item, 'courseId', 'course_id') || ""}">
+                <label>教师ID</label>
+                <input id="f_teacherId" type="number" value="${getVal(item, 'teacherId', 'teacher_id') || ""}">
+                <label>学期</label>
+                <input id="f_semester" value="${getVal(item, 'semester', 'semester') || '2025-2026-2'}">
+                <label>上课时间</label>
+                <input id="f_schedule" value="${getVal(item, 'schedule', 'schedule') || ""}">
+                <label>上课地点</label>
+                <input id="f_location" value="${getVal(item, 'location', 'location') || ""}">
+                <label>选课容量</label>
+                <input id="f_capacity" type="number" value="${getVal(item, 'capacity', 'capacity') || 0}">
+            `;
+        }
+        document.getElementById("formBody").innerHTML = formHtml;
+        document.getElementById("formModal").style.display = "block";
+    }
+
+    // 保存数据
+    function saveData() {
+        let url = `/api/admin/${currentType}`;
+        let method = editId ? "PUT" : "POST";
+        let payload = {};
+
+        if (currentType === "student") {
+            payload = {
+                studentId: editId,
+                studentNo: document.getElementById("f_studentNo").value,
+                name: document.getElementById("f_name").value,
+                className: document.getElementById("f_className").value,
+                phone: document.getElementById("f_phone").value,
+                email: document.getElementById("f_email").value
+            };
+        } else if (currentType === "teacher") {
+            payload = {
+                teacherId: editId,
+                teacherNo: document.getElementById("f_teacherNo").value,
+                name: document.getElementById("f_name").value,
+                title: document.getElementById("f_title").value,
+                phone: document.getElementById("f_phone").value,
+                email: document.getElementById("f_email").value
+            };
+        } else if (currentType === "course") {
+            payload = {
+                courseId: editId,
+                courseCode: document.getElementById("f_courseCode").value,
+                courseName: document.getElementById("f_courseName").value,
+                credit: parseFloat(document.getElementById("f_credit").value) || 0,
+                hours: parseInt(document.getElementById("f_hours").value) || 0,
+                type: document.getElementById("f_type").value
+            };
+        } else if (currentType === "offer") {
+            payload = {
+                offerId: editId,
+                courseId: parseInt(document.getElementById("f_courseId").value) || 0,
+                teacherId: parseInt(document.getElementById("f_teacherId").value) || 0,
+                semester: document.getElementById("f_semester").value,
+                schedule: document.getElementById("f_schedule").value,
+                location: document.getElementById("f_location").value,
+                capacity: parseInt(document.getElementById("f_capacity").value) || 0
+            };
+        }
+
+        authFetch(url, { method, body: payload }).then(res => {
+            if (res.code === 200) {
+                showTip("保存成功");
+                closeModal();
+                loadTableData(currentTab);
+            } else {
+                showTip("保存失败：" + res.msg, true);
+            }
+        });
+    }
+
+    function closeModal() {
+        document.getElementById("formModal").style.display = "none";
+        editId = null;
+    }
+</script>
+</body>
+</html>

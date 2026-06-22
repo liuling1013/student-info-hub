@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>学生管理</title>
+    <style>
+        table, th, td { border: 1px solid #ccc; border-collapse: collapse; padding: 8px; }
+        button { margin: 5px; }
+    </style>
+</head>
+<body>
+<h1>学生管理</h1>
+<button onclick="addStudent()">新增学生</button>
+<table id="studentTable">
+    <thead><tr><th>学号</th><th>姓名</th><th>班级</th><th>电话</th><th>操作</th></tr></thead>
+    <tbody></tbody>
+</table>
+<script>
+    function loadStudents(){
+        fetch("/api/admin/students").then(res=>res.json()).then(data=>{
+            const tbody = document.querySelector("#studentTable tbody");
+            tbody.innerHTML = "";
+            data.data.forEach(s => {
+                const row = tbody.insertRow();
+                row.insertCell(0).innerText = s.studentNo;
+                row.insertCell(1).innerText = s.name;
+                row.insertCell(2).innerText = s.className;
+                row.insertCell(3).innerText = s.phone;
+                const editBtn = document.createElement("button");
+                editBtn.innerText = "编辑";
+                editBtn.onclick = () => editStudent(s);
+                const delBtn = document.createElement("button");
+                delBtn.innerText = "删除";
+                delBtn.onclick = () => deleteStudent(s.studentId);
+                row.insertCell(4).append(editBtn, delBtn);
+            });
+        });
+    }
+    function editStudent(s){ /* 弹出表单修改 */ }
+    function deleteStudent(id){
+        fetch(`/api/admin/student/delete?studentId=${id}`, {method:"DELETE"}).then(()=>loadStudents());
+    }
+    loadStudents();
+</script>
+</body>
+</html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>我的任课课程</title>
+    <style>
+        body { font-family: "Microsoft YaHei", Arial, sans-serif; margin: 25px; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        h1 { font-size: 48px; margin: 0; font-weight: bold; }
+        .logout {
+            color: #666;
+            text-decoration: none;
+            font-size: 24px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 18px 15px;
+            text-align: left;
+            font-size: 24px;
+            font-weight: normal;
+        }
+        th { background: #f5f5f5; font-weight: bold; }
+        button {
+            cursor: pointer;
+            padding: 8px 16px;
+            font-size: 18px;
+        }
+        .tip {
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            font-size: 20px;
+            display: none;
+        }
+        .tip-error { color: #d93025; background: #ffebe9; }
+        .tip-empty { color: #666; background: #f5f5f5; text-align: center; }
+        .loading { font-size: 20px; color: #666; }
+    </style>
+</head>
+<body>
+<div class="header">
+    <h1>我的任课课程</h1>
+    <a class="logout" href="/login.html" onclick="localStorage.clear()">退出登录</a>
+</div>
+
+<div id="errorTip" class="tip tip-error"></div>
+<div id="emptyTip" class="tip tip-empty">暂无任课课程数据</div>
+
+<div id="loading" class="loading">加载中...</div>
+<table id="courseTable" style="display:none;">
+    <thead>
+    <tr>
+        <th>课程名称</th><th>学期</th><th>上课时间</th><th>上课地点</th><th>选课人数</th><th>操作</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script src="/js/common.js"></script>
+<script>
+    const teacherId = localStorage.getItem("teacherId");
+    const semester = "2025-2026-2";
+
+    // 兼容驼峰/下划线字段
+    function getVal(item, camel, underscore) {
+        if (item == null) return "";
+        if (item[camel] !== undefined && item[camel] !== null) return item[camel];
+        if (item[underscore] !== undefined && item[underscore] !== null) return item[underscore];
+        return "";
+    }
+
+    function showError(msg) {
+        document.getElementById("errorTip").textContent = msg;
+        document.getElementById("errorTip").style.display = "block";
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("courseTable").style.display = "none";
+        document.getElementById("emptyTip").style.display = "none";
+    }
+
+    window.onload = function() {
+        if (!teacherId) {
+            showError("未获取到教师信息，请重新登录");
+            setTimeout(() => location.href = "/login.html", 1500);
+            return;
+        }
+
+        authFetch(`/api/teacher/my-courses?teacherId=${teacherId}&semester=${semester}`)
+            .then(res => {
+                document.getElementById("loading").style.display = "none";
+                if (res.code !== 200) {
+                    showError("加载失败：" + res.msg);
+                    return;
+                }
+
+                const list = res.data;
+                if (!list || list.length === 0) {
+                    document.getElementById("emptyTip").style.display = "block";
+                    return;
+                }
+
+                const tbody = document.querySelector("#courseTable tbody");
+                tbody.innerHTML = "";
+                list.forEach(c => {
+                    const row = tbody.insertRow();
+                    row.insertCell().textContent = getVal(c, "courseName", "course_name") || "未知课程";
+                    row.insertCell().textContent = getVal(c, "semester", "semester") || "";
+                    row.insertCell().textContent = getVal(c, "schedule", "schedule") || "";
+                    row.insertCell().textContent = getVal(c, "location", "location") || "";
+                    row.insertCell().textContent = getVal(c, "enrolledCount", "enrolled_count") || 0;
+
+                    const btn = document.createElement("button");
+                    btn.textContent = "成绩录入";
+                    btn.onclick = () => location.href = `/teacher/grade_input?offerId=${getVal(c, "offerId", "offer_id")}`;
+                    row.insertCell().appendChild(btn);
+                });
+
+                document.getElementById("courseTable").style.display = "table";
+            })
+            .catch(err => {
+                console.error("请求异常：", err);
+                showError("请求失败：" + err.message);
+            });
+    };
+</script>
+</body>
+</html>

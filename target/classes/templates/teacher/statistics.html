@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>班级成绩统计</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        #chart { width: 800px; height: 500px; margin: 0 auto; }
+    </style>
+</head>
+<body>
+<h1>成绩分布统计</h1>
+<div id="chart"></div>
+<script src="/js/common.js"></script>
+<script>
+    const offerId = new URLSearchParams(location.search).get("offerId");
+    if (!offerId) {
+        document.body.innerHTML = "<h1>缺少课程参数</h1>";
+    } else {
+        authFetch(`/api/teacher/statistics?offerId=${offerId}`).then(data => {
+            if (data.code === 200) {
+                const stats = data.data;
+                const distribution = stats.distribution;
+                // 确保 distribution 存在且为数组
+                if (Array.isArray(distribution) && distribution.length === 5) {
+                    const chart = echarts.init(document.getElementById("chart"));
+                    chart.setOption({
+                        title: { text: "成绩分布" },
+                        xAxis: { type: "category", data: ["0-59", "60-69", "70-79", "80-89", "90-100"] },
+                        yAxis: { type: "value", name: "人数" },
+                        series: [{ type: "bar", data: distribution, itemStyle: { color: "#4CAF50" } }]
+                    });
+                } else {
+                    alert("成绩分布数据格式错误");
+                }
+            } else {
+                alert("加载统计失败：" + data.msg);
+            }
+        }).catch(err => {
+            console.error(err);
+            alert("请求失败，请检查后端服务");
+        });
+    }
+</script>
+</body>
+</html>

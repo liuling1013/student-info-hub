@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>全校成绩汇总</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f2f2f2; }
+    </style>
+</head>
+<body>
+<h1>全校成绩汇总</h1>
+<div id="loading">加载中...</div>
+<table id="summaryTable" style="display:none;">
+    <thead>
+    <tr><th>课程名称</th><th>学期</th><th>平均分</th><th>最高分</th><th>最低分</th><th>及格率(%)</th><th>成绩分布</th>
+    </thead>
+    <tbody></tbody>
+</table>
+<script src="/js/common.js"></script>
+<script>
+    // 1. 获取所有开课列表
+    authFetch("/api/admin/offers").then(offersRes => {
+        if (offersRes.code !== 200) {
+            alert("加载课程列表失败");
+            return;
+        }
+        const offers = offersRes.data;
+        if (offers.length === 0) {
+            document.getElementById("loading").innerText = "暂无开课数据";
+            return;
+        }
+
+        // 2. 并行获取每门课的成绩统计
+        const promises = offers.map(offer =>
+            authFetch(`/api/teacher/statistics?offerId=${offer.offerId}`)
+                .then(statRes => {
+                    if (statRes.code === 200) {
+                        return {
+                            courseName: offer.courseName,
+                            semester: offer.semester,
+                            ...statRes.data
+                        };
+                    } else {
+                        return null;
+                    }
+                })
+                .catch(() => null)
+        );
+
+        Promise.all(promises).then(results => {
+            const validResults = results.filter(r => r !== null);
+            document.getElementById("loading").style.display = "none";
+            const tbody = document.querySelector("#summaryTable tbody");
+            validResults.forEach(r => {
+                const row = tbody.insertRow();
+                row.insertCell(0).innerText = r.courseName;
+                row.insertCell(1).innerText = r.semester;
+                row.insertCell(2).innerText = r.avg;
+                row.insertCell(3).innerText = r.max;
+                row.insertCell(4).innerText = r.min;
+                row.insertCell(5).innerText = r.passRate;
+                // 分布简写
+                const dist = r.distribution;
+                row.insertCell(6).innerText = `0-59:${dist[0]} 60-69:${dist[1]} 70-79:${dist[2]} 80-89:${dist[3]} 90-100:${dist[4]}`;
+            });
+            document.getElementById("summaryTable").style.display = "table";
+        });
+    });
+</script>
+</body>
+</html>

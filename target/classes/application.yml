@@ -1,0 +1,33 @@
+server:
+  port: 8080
+
+spring:
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/grade_system?useSSL=false&serverTimezone=Asia/Shanghai&characterEncoding=utf8&allowPublicKeyRetrieval=true
+    username: root
+    password: 'chen10yuan13hui.'
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  thymeleaf:
+    cache: false
+    prefix: classpath:/templates/
+    suffix: .html
+
+mybatis-plus:
+  mapper-locations: classpath:/mapper/*.xml
+  type-aliases-package: com.grade.entity
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+
+jwt:
+  secret: your_jwt_secret_key_2026_grade_system_32bytes_long
+  expiration: 604800000
+
+grade:
+  regular-weight: 0.4
+  exam-weight: 0.6
+  max-credits-per-semester: 30

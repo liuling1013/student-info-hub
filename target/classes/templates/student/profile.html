@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>个人信息</title>
+</head>
+<body>
+<h1>个人信息</h1>
+<form id="profileForm">
+    <label>学号：</label><input type="text" id="studentNo" readonly/><br/>
+    <label>姓名：</label><input type="text" id="name" readonly/><br/>
+    <label>班级：</label><input type="text" id="className"/><br/>
+    <label>电话：</label><input type="text" id="phone"/><br/>
+    <label>邮箱：</label><input type="text" id="email"/><br/>
+    <button type="button" onclick="updateProfile()">保存修改</button>
+</form>
+<script>
+    // 加载个人信息 (GET /api/student/profile?studentId=...)
+    const studentId = localStorage.getItem("userId");
+    fetch(`/api/student/profile?studentId=${studentId}`)
+        .then(res => res.json())
+        .then(data => {
+            if(data.code === 200){
+                document.getElementById("studentNo").value = data.data.studentNo;
+                document.getElementById("name").value = data.data.name;
+                document.getElementById("className").value = data.data.className;
+                document.getElementById("phone").value = data.data.phone;
+                document.getElementById("email").value = data.data.email;
+            }
+        });
+    function updateProfile(){
+        const payload = {
+            studentId: studentId,
+            className: document.getElementById("className").value,
+            phone: document.getElementById("phone").value,
+            email: document.getElementById("email").value
+        };
+        fetch("/api/student/profile", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        }).then(res => res.json()).then(data => alert(data.msg));
+    }
+</script>
+</body>
+</html>

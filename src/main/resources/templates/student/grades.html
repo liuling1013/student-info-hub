@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>我的成绩</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 25px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background: #f5f5f5; }
+        .nav { margin-bottom: 20px; }
+        .nav a { margin-right: 15px; color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="nav">
+    <a href="/student/course_list">返回选课</a>
+    <a href="/login.html" onclick="localStorage.clear()" style="float:right;">退出登录</a>
+</div>
+
+<h1>我的成绩</h1>
+<div id="loading">加载中...</div>
+<table id="gradeTable" style="display:none;">
+    <thead>
+    <tr>
+        <th>课程名称</th><th>学期</th><th>平时成绩</th><th>期末成绩</th><th>总评成绩</th><th>绩点</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script src="/js/common.js"></script>
+<script>
+    const studentId = localStorage.getItem("studentId");
+    if (!studentId) {
+        alert("请先登录");
+        location.href = "/login.html";
+    }
+
+    authFetch(`/api/student/grades?studentId=${studentId}`)
+        .then(res => {
+            document.getElementById("loading").style.display = "none";
+            if (res.code === 200) {
+                const list = res.data;
+                const tbody = document.querySelector("#gradeTable tbody");
+                tbody.innerHTML = "";
+
+                list.forEach(item => {
+                    const row = tbody.insertRow();
+                    row.insertCell().textContent = item.course_name || item.courseName || "-";
+                    row.insertCell().textContent = item.semester || "-";
+                    row.insertCell().textContent = item.regular_score ?? "-";
+                    row.insertCell().textContent = item.exam_score ?? "-";
+                    row.insertCell().textContent = item.total_score ?? "-";
+                    row.insertCell().textContent = item.grade_point ?? "-";
+                });
+
+                document.getElementById("gradeTable").style.display = "table";
+            } else {
+                alert("加载失败：" + res.msg);
+            }
+        });
+</script>
+</body>
+</html>
